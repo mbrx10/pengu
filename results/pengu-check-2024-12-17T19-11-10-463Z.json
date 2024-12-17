@@ -1,0 +1,34 @@
+{
+  "timestamp": "2024-12-17T19:11:10.462Z",
+  "stats": {
+    "total": 2,
+    "success": 2,
+    "failed": 0,
+    "eligible": 2
+  },
+  "eligible": [
+    {
+      "wallet": "7CTEoWq8XMH4dJSuUyP7dS7CpfkXu8rpiaPWwUPta4UM",
+      "tokens": 1079,
+      "categories": []
+    },
+    {
+      "wallet": "3KkG8snGc4L7ZtBvpFCDaAggoJ77iVPXuB8tN7ZCdHNB",
+      "tokens": 1837,
+      "categories": [
+        {
+          "category": "OG SOL Users",
+          "items": [
+            {
+              "address": "3KkG8snGc4L7ZtBvpFCDaAggoJ77iVPXuB8tN7ZCdHNB",
+              "amount": 1837
+            }
+          ],
+          "total": 1837
+        }
+      ]
+    }
+  ],
+  "not_eligible": [],
+  "errors": []
+}
