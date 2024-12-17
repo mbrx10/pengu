@@ -1,6 +1,17 @@
-# Pudgy Penguins
+# Pudgy Penguins Eligibility Checker
 
-A Solana-based script for checking and claiming.
+A script for checking Pudgy Penguins airdrop eligibility for both Solana and Ethereum wallets.
+
+## Features
+
+- Support for both Solana and Ethereum wallets
+- Multiple private key formats supported:
+  - Solana: Base58, array, and hex formats
+  - Ethereum: Hex format (with or without 0x prefix)
+- Direct Ethereum address checking
+- Batch processing to avoid rate limiting
+- Detailed eligibility results with token amounts and categories
+- Results saved to JSON files
 
 ## Prerequisites
 
@@ -20,24 +31,39 @@ cd pengu
 npm install
 ```
 
-3. Set up your private key:
-Create a `privatekey.txt` file in the root directory and add your private key.
+3. Set up your wallets:
+Create a `privatekey.txt` file in the root directory and add your private keys or Ethereum addresses (one per line).
+
+Example formats supported:
+```
+// Solana private keys
+Base58Format123456789...
+[1,2,3,4...] // Array format
+123456789ABCDEF... // Hex format
+
+// Ethereum
+0x123456789abcdef... // Address
+123456789abcdef... // Private key (with or without 0x)
+```
 
 ## Usage
 
-### To run the checker:
+Run the checker:
 ```bash
 npm start
 ```
 
+Results will be saved in the `results` directory.
+
 ## Dependencies
 
-- @solana/wallet-adapter-base
-- @solana/web3.js
-- base-58
-- bip39
-- ed25519-hd-key
-- tweetnacl
+- @solana/web3.js - For Solana wallet operations
+- ethers - For Ethereum wallet operations
+- base-58 - For Base58 encoding/decoding
+- tweetnacl - For cryptographic operations
 
-## Note
-Make sure to keep your `privatekey.txt` secure and never share it with anyone.
+## Security Note
+
+- Keep your `privatekey.txt` secure and never share it
+- The file is automatically ignored by git
+- Results directory is also git-ignored for security
