@@ -1,4 +1,8 @@
+// Disable deprecation warnings
+process.noDeprecation = true;
+
 const { Connection, Keypair, PublicKey } = require('@solana/web3.js');
+const { Wallet } = require('ethers');
 const fs = require('fs');
 const path = require('path');
 const Base58 = require('base-58');
@@ -13,6 +17,23 @@ function delay(ms) {
 }
 
 function getWalletData(privateKey) {
+    // First try as Ethereum private key
+    try {
+        // Remove 0x if present
+        const cleanKey = privateKey.trim().replace('0x', '');
+        // Check if it's a valid hex string of correct length (32 bytes = 64 chars)
+        if (/^[0-9a-fA-F]{64}$/.test(cleanKey)) {
+            const wallet = new Wallet(cleanKey);
+            return {
+                type: 'ethereum',
+                wallet: wallet.address,
+                ethWallet: wallet
+            };
+        }
+    } catch (error) {
+        // Not a valid Ethereum key, continue to try Solana formats
+    }
+
     let privateKeyBytes;
     
     // Remove any whitespace
@@ -26,7 +47,7 @@ function getWalletData(privateKey) {
             throw new Error('Invalid array format private key');
         }
     } 
-    // Check if privateKey is hex format
+    // Check if privateKey is hex format for Solana (64 bytes = 128 chars)
     else if (/^[0-9a-fA-F]{128}$/.test(privateKey)) {
         try {
             privateKeyBytes = new Uint8Array(
@@ -48,6 +69,7 @@ function getWalletData(privateKey) {
     try {
         const keypair = Keypair.fromSecretKey(privateKeyBytes);
         return {
+            type: 'solana',
             wallet: keypair.publicKey.toString(),
             privateKeyBytes
         };
@@ -142,37 +164,58 @@ async function checkPenguEligibility(address) {
     }
 }
 
-async function checkWallet(privateKey) {
+// Add isValidEthereumAddress function
+function isValidEthereumAddress(address) {
+    return /^0x[a-fA-F0-9]{40}$/.test(address);
+}
+
+async function checkWallet(input) {
     let wallet = 'Unknown';
     try {
-        // Get wallet data
-        const walletData = getWalletData(privateKey);
-        wallet = walletData.wallet;
-        const privateKeyBytes = walletData.privateKeyBytes;
-        
-        // Get auth message
-        const messageData = await getAuthMessage();
-        
-        // Sign the message
-        const signature = signMessage(messageData.message, privateKeyBytes);
-
-        // Get auth token
-        const tokenData = await getAuthToken(signature, messageData.signingDate, wallet);
-        if (!tokenData.isValid) {
-            throw new Error('Invalid token');
+        // Check if input is an Ethereum address
+        if (isValidEthereumAddress(input)) {
+            wallet = input;
+            console.log('\nChecking Ethereum address:', wallet);
+            const eligibility = await checkPenguEligibility(wallet);
+            return {
+                wallet,
+                status: 'success',
+                eligible: eligibility.total > 0,
+                tokens: eligibility.total,
+                categories: eligibility.categories || []
+            };
         }
+
+        // Try to get wallet data (now supports both ETH and SOL private keys)
+        const walletData = getWalletData(input);
+        wallet = walletData.wallet;
         
+        console.log(`\nChecking ${walletData.type === 'ethereum' ? 'Ethereum' : 'Solana'} wallet:`, wallet);
+        
+        if (walletData.type === 'solana') {
+            // Get auth message
+            const authMessage = await getAuthMessage();
+
+            // Sign message
+            const signature = signMessage(authMessage.message, walletData.privateKeyBytes);
+
+            // Get auth token
+            await getAuthToken(signature, authMessage.signingDate, wallet);
+        }
+
         // Check eligibility
-        const result = await checkPenguEligibility(wallet);
+        const eligibility = await checkPenguEligibility(wallet);
         
         return {
             wallet,
             status: 'success',
-            eligible: result.total > 0,
-            tokens: result.total,
-            categories: result.categories.length > 0 ? result.categories : []
+            eligible: eligibility.total > 0,
+            tokens: eligibility.total,
+            categories: eligibility.categories || []
         };
+
     } catch (error) {
+        console.error(`Error checking wallet ${wallet}:`, error.message);
         return {
             wallet,
             status: 'error',
@@ -183,58 +226,49 @@ async function checkWallet(privateKey) {
 
 async function main() {
     try {
-        console.log(banner);
-        
         // Read private keys from file
-        const privateKeysPath = path.join(__dirname, 'privatekey.txt');
-        const privateKeys = fs.readFileSync(privateKeysPath, 'utf8')
+        const privateKeys = fs.readFileSync('privatekey.txt', 'utf8')
             .split('\n')
             .map(line => line.trim())
             .filter(line => line.length > 0);
 
+        console.log(banner);
         console.log(`Found ${privateKeys.length} wallet(s) to check`);
-        console.log('Checking wallets in parallel...\n');
-
-        // Process wallets in smaller batches to avoid rate limiting
-        const batchSize = 5;
-        const results = [];
+        console.log('Checking wallets in batches...\n');
+        
         let successful = 0;
         let failed = 0;
         let eligible = 0;
+        const results = [];
 
+        // Process wallets in smaller batches to avoid rate limiting
+        const batchSize = 5;
         for (let i = 0; i < privateKeys.length; i += batchSize) {
             const batch = privateKeys.slice(i, i + batchSize);
             const batchResults = await Promise.all(
-                batch.map(async (privateKey, index) => {
-                    try {
-                        const result = await checkWallet(privateKey);
-                        const walletNum = i + index + 1;
-                        
-                        if (result.status === 'success') {
-                            successful++;
-                            if (result.eligible) {
-                                eligible++;
-                                console.log(`✅ Wallet ${walletNum}/${privateKeys.length}: ${result.wallet}`);
-                                console.log(`   Tokens: ${result.tokens}`);
-                                console.log(`   Categories: ${result.categories}`);
-                            } else {
-                                console.log(`❌ Wallet ${walletNum}/${privateKeys.length}: ${result.wallet}`);
-                                console.log(`   Tokens: ${result.tokens}`);
+                batch.map(async (privateKey) => {
+                    const result = await checkWallet(privateKey);
+                    const walletNum = i + batch.indexOf(privateKey) + 1;
+                    
+                    if (result.status === 'success') {
+                        successful++;
+                        if (result.eligible) {
+                            eligible++;
+                            console.log(`✅ Wallet ${walletNum}/${privateKeys.length}: ${result.wallet}`);
+                            console.log(`   Tokens: ${result.tokens}`);
+                            if (result.categories && result.categories.length > 0) {
+                                console.log(`   Categories: ${result.categories.map(c => c.category).join(', ')}`);
                             }
                         } else {
-                            failed++;
                             console.log(`❌ Wallet ${walletNum}/${privateKeys.length}: ${result.wallet}`);
-                            console.log(`   Error: ${result.error}`);
+                            console.log(`   Tokens: ${result.tokens}`);
                         }
-                        return result;
-                    } catch (error) {
+                    } else {
                         failed++;
-                        console.error(`Error processing wallet: ${error.message}`);
-                        return {
-                            status: 'error',
-                            error: error.message
-                        };
+                        console.log(`❌ Wallet ${walletNum}/${privateKeys.length}: ${result.wallet}`);
+                        console.log(`   Error: ${result.error}`);
                     }
+                    return result;
                 })
             );
             results.push(...batchResults);
@@ -245,24 +279,25 @@ async function main() {
             }
         }
 
-        console.log('\nSummary:');
-        console.log(`Total Wallets: ${privateKeys.length}`);
-        console.log(`Successful: ${successful}`);
-        console.log(`Failed: ${failed}`);
-        console.log(`Eligible: ${eligible}\n`);
-
         // Save results to file
         const timestamp = new Date().toISOString().replace(/:/g, '-');
-        const resultsDir = path.join(__dirname, 'results');
+        const resultsDir = path.join(process.cwd(), 'results');
         if (!fs.existsSync(resultsDir)) {
             fs.mkdirSync(resultsDir);
         }
         const resultsFile = path.join(resultsDir, `pengu-check-${timestamp}.json`);
         fs.writeFileSync(resultsFile, JSON.stringify(results, null, 2));
-        console.log(`Results saved to: ${resultsFile}`);
+
+        console.log('\nSummary:');
+        console.log(`Total Wallets: ${privateKeys.length}`);
+        console.log(`Successful: ${successful}`);
+        console.log(`Failed: ${failed}`);
+        console.log(`Eligible: ${eligible}`);
+        console.log(`\nResults saved to: ${resultsFile}`);
 
     } catch (error) {
-        console.error('Error:', error.message);
+        console.error('Error in main:', error);
+        process.exit(1);
     }
 }
 
