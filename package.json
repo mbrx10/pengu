@@ -8,8 +8,8 @@
   },
   "keywords": [],
   "author": "@mbrx10",
-  "license": "ISC",
-  "description": "",
+  "license": "MIT",
+  "description": "A Solana-based script for checking and claiming Pudgy Penguins",
   "dependencies": {
     "@solana/wallet-adapter-base": "^0.9.23",
     "@solana/web3.js": "^1.98.0",
