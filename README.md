@@ -7,8 +7,7 @@ A script for checking Pudgy Penguins airdrop eligibility for both Solana and Eth
 - Support for both Solana and Ethereum wallets
 - Multiple private key formats supported:
   - Solana: Base58, array, and hex formats
-  - Ethereum: Hex format (with or without 0x prefix)
-- Direct Ethereum address checking
+  - Ethereum: Private key in hex format (with or without 0x prefix)
 - Batch processing to avoid rate limiting
 - Detailed eligibility results with token amounts and categories
 - Results saved to JSON files
@@ -32,7 +31,7 @@ npm install
 ```
 
 3. Set up your wallets:
-Create a `privatekey.txt` file in the root directory and add your private keys or Ethereum addresses (one per line).
+Create a `privatekey.txt` file in the root directory and add your private keys (one per line).
 
 Example formats supported:
 ```
@@ -41,8 +40,7 @@ Base58Format123456789...
 [1,2,3,4...] // Array format
 123456789ABCDEF... // Hex format
 
-// Ethereum
-0x123456789abcdef... // Address
+// Ethereum private key
 123456789abcdef... // Private key (with or without 0x)
 ```
 

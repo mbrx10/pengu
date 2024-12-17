@@ -164,29 +164,10 @@ async function checkPenguEligibility(address) {
     }
 }
 
-// Add isValidEthereumAddress function
-function isValidEthereumAddress(address) {
-    return /^0x[a-fA-F0-9]{40}$/.test(address);
-}
-
 async function checkWallet(input) {
     let wallet = 'Unknown';
     try {
-        // Check if input is an Ethereum address
-        if (isValidEthereumAddress(input)) {
-            wallet = input;
-            console.log('\nChecking Ethereum address:', wallet);
-            const eligibility = await checkPenguEligibility(wallet);
-            return {
-                wallet,
-                status: 'success',
-                eligible: eligibility.total > 0,
-                tokens: eligibility.total,
-                categories: eligibility.categories || []
-            };
-        }
-
-        // Try to get wallet data (now supports both ETH and SOL private keys)
+        // Try to get wallet data (supports both ETH and SOL private keys)
         const walletData = getWalletData(input);
         wallet = walletData.wallet;
         
