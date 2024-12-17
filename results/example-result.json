@@ -1,0 +1,40 @@
+{
+  "timestamp": "2024-12-18T02:25:35.000Z",
+  "stats": {
+    "total": 3,
+    "success": 2,
+    "failed": 1,
+    "eligible": 1
+  },
+  "eligible": [
+    {
+      "wallet": "ExampleWallet123456789abcdefghijklmnopqrstuvwxyz",
+      "tokens": 1000,
+      "categories": [
+        {
+          "category": "Early Adopter",
+          "items": [
+            {
+              "address": "ExampleWallet123456789abcdefghijklmnopqrstuvwxyz",
+              "amount": 1000
+            }
+          ],
+          "total": 1000
+        }
+      ]
+    }
+  ],
+  "ineligible": [
+    {
+      "wallet": "IneligibleWallet123456789abcdefghijklmnopqrstuvw",
+      "reason": "Insufficient tokens",
+      "tokens": 50
+    }
+  ],
+  "failed": [
+    {
+      "wallet": "FailedWallet123456789abcdefghijklmnopqrstuvwxyz",
+      "error": "Network connection error"
+    }
+  ]
+}
