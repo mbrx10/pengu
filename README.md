@@ -1,4 +1,4 @@
-# Pengu
+# Pudgy Penguins
 
 A Solana-based script for checking and claiming.
 
@@ -27,12 +27,7 @@ Create a `privatekey.txt` file in the root directory and add your private key.
 
 ### To run the checker:
 ```bash
-npm run check
-```
-
-### To run the claim script:
-```bash
-npm run claim
+npm start
 ```
 
 ## Dependencies

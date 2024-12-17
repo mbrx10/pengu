@@ -1,14 +1,12 @@
 {
   "name": "pengu",
   "version": "1.0.0",
-  "main": "config.js",
+  "main": "checker.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "check": "node checker.js",
-    "claim": "node claim.js"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
-  "author": "",
+  "author": "@mbrx10",
   "license": "ISC",
   "description": "",
   "dependencies": {
